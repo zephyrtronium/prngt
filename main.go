@@ -12,55 +12,52 @@ import (
 	"time"
 )
 
- func init() {
-	 runtime.GOMAXPROCS(runtime.NumCPU())
-	 flag.Usage = func() {
-		 fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
-		 flag.PrintDefaults()
-		 fmt.Fprintln(os.Stderr, `messages look like
+func init() {
+	runtime.GOMAXPROCS(runtime.NumCPU())
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage of %s:\n", os.Args[0])
+		flag.PrintDefaults()
+		fmt.Fprintln(os.Stderr, `messages look like
 <test> testing <rng>	σ²/μ=<value>	took <time>
 σ²/μ is index of dispersion. Lower values indicate higher-quality randomness,
 but if a generator never produces high values, then it isn't random.
 
-	Available tests:`)
+Available tests:`)
 		for i := range Tests {
 			fmt.Fprint(os.Stderr, i, " ")
 		}
-		fmt.Fprintln(os.Stderr, "\n	Available RNGs:")
+		fmt.Fprintln(os.Stderr, "\n\nAvailable RNGs:")
 		for i := range RNGs {
 			fmt.Fprint(os.Stderr, i, " ")
 		}
 		fmt.Fprintln(os.Stderr)
-	 }
- }
+	}
+}
 
 var waitgroup sync.WaitGroup
 
 func main() {
 	var rng, test string
-	var seed int64
+	var seed uint64
 	flag.StringVar(&rng, "rng", "", "select an RNG to test (default all)")
 	flag.StringVar(&test, "test", "", "select a test to run (default all)")
-	flag.Int64Var(&seed, "seed", -1, "initial seed (default random)")
+	flag.Uint64Var(&seed, "seed", ^uint64(0), "initial seed (default random)")
 	flag.Parse()
 
-	if seed == -1 {
+	if seed == ^uint64(0) {
 		binary.Read(crand.Reader, binary.LittleEndian, &seed)
 	}
-	var rngs map[string]rand.Source
+	var rngs map[string]RNGGetter
 	var tests map[string]Test
 	if rng == "" {
-		rngs = make(map[string]rand.Source)
-		for i, f := range RNGs {
-			rngs[i] = f(seed)
-		}
+		rngs = RNGs
 	} else {
 		f, ok := RNGs[rng]
 		if !ok {
 			fmt.Fprintln(os.Stderr, "unknown rng", rng)
 			os.Exit(1)
 		}
-		rngs = map[string]rand.Source{rng: f(seed)}
+		rngs = map[string]RNGGetter{rng: f}
 	}
 	if test == "" {
 		tests = Tests
@@ -73,16 +70,16 @@ func main() {
 		tests = map[string]Test{test: t}
 	}
 
-	fmt.Printf("Using seed %#016x\n", uint64(seed))
+	fmt.Printf("Using seed %#016x\n", seed)
 	start := time.Now()
 	for rname, r := range rngs {
 		for tname, t := range tests {
 			waitgroup.Add(1)
-			go doTest(r, t, rname, tname)
+			go doTest(r(int64(seed)), t, rname, tname)
 		}
 	}
 	waitgroup.Wait()
-	fmt.Println("Total testing time:", time.Since(start))
+	fmt.Println("Total elapsed time:", time.Since(start))
 }
 
 func doTest(rng rand.Source, test Test, rname, tname string) {

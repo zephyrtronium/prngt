@@ -8,6 +8,7 @@ import "math/rand"
 type Test func(rand.Source) float64
 
 var Tests = map[string]Test{
-	"survival": Survival,
+	"survival":        Survival,
 	"survival-parity": SurvivalParity,
+	"popcount":        Popcount,
 }

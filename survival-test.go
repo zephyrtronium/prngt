@@ -8,6 +8,7 @@ const survivalN = 1000000
 // sequence "survives", or fails to change. If the sequence is uniformly
 // distributed, then survival times should be exponentially distributed.
 func Survival(r rand.Source) float64 {
+	//TODO: prevent first iteration from matching
 	consec := [63]int{}
 	bits := [63]bool{}
 	counts := make(map[int]int)
@@ -24,14 +25,13 @@ func Survival(r rand.Source) float64 {
 		}
 	}
 	var maximum int
-	var mean float64
+	var sum int
 	for i, v := range counts {
 		if i > maximum {
 			maximum = i
 		}
-		mean += float64(v)
+		sum += v
 	}
-	mean /= float64(maximum)
 	// If the source is truly random, then there should be half as many hits
 	// for counts[n] as there were for counts[n-1], with counts[0] being the
 	// maximum.
@@ -41,7 +41,10 @@ func Survival(r rand.Source) float64 {
 	for i := 1; i < maximum; i++ {
 		E /= 2
 		d := float64(counts[i]) - E
-		s2n += d*d
+		s2n += d * d
 	}
-	return s2n / float64(maximum) / mean // index of dispersion
+	// s²_n = 1/n ∑(y_i - E[y_i])²
+	// E[Y] = 1/n ∑Y
+	// D = s²_n / E[Y] = (1/n ∑(y_i - E[y_i])²) / (1/n ∑Y) = (∑(y_i - E[y_i])²) / ∑Y
+	return s2n / float64(sum)
 }

@@ -2,12 +2,12 @@ package main
 
 import "math/rand"
 
-const survivalParityN = 10000000
+const survivalParityN = 100000000
 
 // Survival Parity applies Survival to the parity of the random values.
 func SurvivalParity(r rand.Source) float64 {
 	consec := 0
-	var parity int64 = -1 // so as to prevent the first iteration from matching
+	var parity int64 = -1 // prevent the first iteration from matching
 	counts := map[int]int{0: -1}
 	for i := 0; i < survivalParityN; i++ {
 		// software parity because I do not enjoy setting up asm to be used
@@ -27,14 +27,13 @@ func SurvivalParity(r rand.Source) float64 {
 	}
 	// copypasta
 	var maximum int
-	var mean float64
+	var sum int
 	for i, v := range counts {
 		if i > maximum {
 			maximum = i
 		}
-		mean += float64(v)
+		sum += v
 	}
-	mean /= float64(maximum)
 	// If the source is truly random, then there should be half as many hits
 	// for counts[n] as there were for counts[n-1], with counts[0] being the
 	// maximum.
@@ -44,7 +43,7 @@ func SurvivalParity(r rand.Source) float64 {
 	for i := 1; i < maximum; i++ {
 		E /= 2
 		d := float64(counts[i]) - E
-		s2n += d*d
+		s2n += d * d
 	}
-	return s2n / float64(maximum) / mean // index of dispersion
+	return s2n / float64(sum) // index of dispersion
 }
