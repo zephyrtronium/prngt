@@ -1,6 +1,6 @@
 Implemented tests:
 
- - avalanche: The Hamming distances between the *n*th values of one RNG seeded with two values whose Hamming distance is 1 should follow a binomial distribution.
+ - avalanche: The Hamming distances between the nth values of one RNG seeded with two values whose Hamming distance is 1 should follow a binomial distribution.
    This tests the [bit avalanche](http://en.wikipedia.org/wiki/Avalanche_effect).
    **NOTE**: This test tends to be _very_ slow, as it has to seed each RNG twice in each of its hundred thousand iterations, and seeding algorithms can be very slow. xer65536 took just under three hours on my system.
    **NOTE**: The crypto-reader RNG does not operate properly under this test, as seeding is a no-op.
