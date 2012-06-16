@@ -1,18 +1,22 @@
-package main
+package tests
 
 import "math/rand"
 
-const survivalN = 1000000
+const laggedSurvN = 1000000
 
-// The survival test measures through how many iterations each bit in the
-// sequence "survives", or fails to change. If the sequence is uniformly
-// distributed, then survival times should be exponentially distributed.
-func Survival(r rand.Source) float64 {
+func NewLaggedSurvival(N int) Test {
+	return func(r rand.Source) float64 { return LaggedSurvival(r, N) }
+}
+
+// The lagged survival test applies the survival test to an RNG, skipping N
+// iterates between each sample.
+func LaggedSurvival(r rand.Source, N int) float64 {
+	// hax teh copypasta
 	//TODO: prevent first iteration from matching
 	consec := [63]int{}
 	bits := [63]bool{}
 	counts := make(map[int]int)
-	for i := 0; i < survivalN; i++ {
+	for i := 0; i < laggedSurvN; i++ {
 		x := r.Int63()
 		for b := 0; b < 63; b++ {
 			if ((x & (1 << uint(b))) != 0) == bits[b] { // bit survived
@@ -22,6 +26,9 @@ func Survival(r rand.Source) float64 {
 				counts[consec[b]] = counts[consec[b]] + 1
 				consec[b] = 0
 			}
+		}
+		for n := 0; n < N; n++ {
+			r.Int63()
 		}
 	}
 	var maximum int

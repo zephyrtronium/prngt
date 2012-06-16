@@ -1,8 +1,8 @@
-package main
+package tests
 
 import "math/rand"
 
-const survivalParityN = 100000000
+const survivalParityN = laggedSurvN * 63
 
 // Survival Parity applies Survival to the parity of the random values.
 func SurvivalParity(r rand.Source) float64 {
@@ -37,7 +37,7 @@ func SurvivalParity(r rand.Source) float64 {
 	// If the source is truly random, then there should be half as many hits
 	// for counts[n] as there were for counts[n-1], with counts[0] being the
 	// maximum.
-	//TODO: E should be calculated from the median
+	//TODO: E should be calculated from the median. This is causing crc64-ecma to NaN.
 	E := float64(counts[0])
 	var s2n float64
 	for i := 1; i < maximum; i++ {
