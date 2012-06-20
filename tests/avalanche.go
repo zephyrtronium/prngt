@@ -1,10 +1,6 @@
 package tests
 
-import (
-	"math/big"
-	"math/rand"
-	"strconv"
-)
+import "math/rand"
 
 const avalancheN = 100000 // this test can take VERY long with slow seeding
 const avalancheFuse = 0
@@ -16,7 +12,7 @@ const avalancheFuse = 0
 // NOTE: ReaderSource RNGs (e.g. crypto-reader) will be incorrect.
 func Avalanche(r rand.Source) float64 {
 	// hax teh copypasta from popcount
-	counts := [63]int64{}
+	counts := [64]int64{}
 	v := r.Int63()
 	var a, b int64
 	for i := 0; i < avalancheN; i++ {
@@ -42,14 +38,10 @@ func Avalanche(r rand.Source) float64 {
 		}
 		v = b // silly to use a^b because that depends upon what we're testing
 	}
-	sum := new(big.Rat)
-	variance := new(big.Rat)
+	var chi2 float64
 	for i, v := range counts {
-		p := new(big.Rat).SetFrac(new(big.Int).Binomial(64, v), i2_p64)
-		sum.Add(sum, p)
-		p.Sub(p, binomialBitDist[i])
-		variance.Add(variance, p.Mul(p, p))
+		d := float64(v)*binomialBitScale - binomialBitPMF[i]
+		chi2 += d*d / binomialBitPMF[i]
 	}
-	D, _ := strconv.ParseFloat(variance.Mul(variance, sum.Inv(sum)).FloatString(50), 64)
-	return D
+	return 1 - LowerGamma(30, chi2/2)*1.13099628864477e-31
 }

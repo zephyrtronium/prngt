@@ -1,8 +1,11 @@
 package tests
 
-import "math/rand"
+import (
+	"math"
+	"math/rand"
+)
 
-const survivalParityN = laggedSurvN * 63
+const survivalParityN = laggedSurvN * 31
 
 // Survival Parity applies Survival to the parity of the random values.
 func SurvivalParity(r rand.Source) float64 {
@@ -27,23 +30,22 @@ func SurvivalParity(r rand.Source) float64 {
 	}
 	// copypasta
 	var maximum int
-	var sum int
-	for i, v := range counts {
+	for i := range counts {
 		if i > maximum {
 			maximum = i
 		}
-		sum += v
 	}
 	// If the source is truly random, then there should be half as many hits
 	// for counts[n] as there were for counts[n-1], with counts[0] being the
 	// maximum.
 	//TODO: E should be calculated from the median. This is causing crc64-ecma to NaN.
 	E := float64(counts[0])
-	var s2n float64
+	var chi2 float64
 	for i := 1; i < maximum; i++ {
 		E /= 2
 		d := float64(counts[i]) - E
-		s2n += d * d
+		chi2 += d * d / E
 	}
-	return s2n / float64(sum) // index of dispersion
+	k_2 := float64(maximum-2) / 2
+	return 1 - LowerGamma(k_2, chi2/2)/math.Gamma(k_2)
 }

@@ -1,8 +1,11 @@
 package tests
 
-import "math/rand"
+import (
+	"math"
+	"math/rand"
+)
 
-const laggedSurvN = 1000000
+const laggedSurvN = 2000000
 
 func NewLaggedSurvival(N int) Test {
 	return func(r rand.Source) float64 { return LaggedSurvival(r, N) }
@@ -31,27 +34,23 @@ func LaggedSurvival(r rand.Source, N int) float64 {
 			r.Int63()
 		}
 	}
-	var maximum int
-	var sum int
-	for i, v := range counts {
+	maximum := len(counts)
+	for i := range counts {
 		if i > maximum {
 			maximum = i
 		}
-		sum += v
 	}
 	// If the source is truly random, then there should be half as many hits
 	// for counts[n] as there were for counts[n-1], with counts[0] being the
 	// maximum.
 	//TODO: E should be calculated from the median
 	E := float64(counts[0])
-	var s2n float64
+	var chi2 float64
 	for i := 1; i < maximum; i++ {
 		E /= 2
 		d := float64(counts[i]) - E
-		s2n += d * d
+		chi2 += d * d / E
 	}
-	// s²_n = 1/n ∑(y_i - E[y_i])²
-	// E[Y] = 1/n ∑Y
-	// D = s²_n / E[Y] = (1/n ∑(y_i - E[y_i])²) / (1/n ∑Y) = (∑(y_i - E[y_i])²) / ∑Y
-	return s2n / float64(sum)
+	k_2 := float64(maximum-2) / 2
+	return 1 - LowerGamma(k_2, chi2/2)/math.Gamma(k_2)
 }
